@@ -14,6 +14,10 @@ const TimeEntry = sequelize.define('TimeEntry', {
   duration: {
     type: DataTypes.INTEGER, // Duration in minutes
     allowNull: false,
+    validate: {
+      min: 1,
+      isInt: true,
+    },
   },
   description: {
     type: DataTypes.TEXT,

@@ -9,7 +9,11 @@ if (!encryptionKey) {
   console.warn('WARNING: ENCRYPTION_KEY not set. Using default key for development only.');
 }
 
+// Validate key length in production
 const key = encryptionKey || 'default-key-change-in-production';
+if (process.env.NODE_ENV === 'production' && key.length < 32) {
+  throw new Error('ENCRYPTION_KEY must be at least 32 characters in production');
+}
 
 const encrypt = (text) => {
   if (!text) return null;

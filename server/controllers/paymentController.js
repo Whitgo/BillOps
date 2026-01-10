@@ -42,9 +42,15 @@ const paymentController = {
         return res.status(400).json({ error: 'Invoice is already paid' });
       }
 
+      // Validate invoice amount
+      const amount = parseFloat(invoice.total);
+      if (amount <= 0) {
+        return res.status(400).json({ error: 'Invoice amount must be greater than zero' });
+      }
+
       // Create Stripe payment intent
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(parseFloat(invoice.total) * 100), // Convert to cents
+        amount: Math.round(amount * 100), // Convert to cents
         currency: 'usd',
         metadata: {
           invoiceId: invoice.id,
