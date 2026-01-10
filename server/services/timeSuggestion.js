@@ -154,6 +154,7 @@ class TimeSuggestionService {
   }
 
   // Adjust duration based on heuristics
+  // Note: duration is expected to be in minutes
   adjustDuration(activity) {
     let duration = activity.duration || 0;
 

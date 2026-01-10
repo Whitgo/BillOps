@@ -1,15 +1,24 @@
 const CryptoJS = require('crypto-js');
 
-const encryptionKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
+const encryptionKey = process.env.ENCRYPTION_KEY;
+
+if (!encryptionKey) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('ENCRYPTION_KEY must be set in production');
+  }
+  console.warn('WARNING: ENCRYPTION_KEY not set. Using default key for development only.');
+}
+
+const key = encryptionKey || 'default-key-change-in-production';
 
 const encrypt = (text) => {
   if (!text) return null;
-  return CryptoJS.AES.encrypt(text, encryptionKey).toString();
+  return CryptoJS.AES.encrypt(text, key).toString();
 };
 
 const decrypt = (encryptedText) => {
   if (!encryptedText) return null;
-  const bytes = CryptoJS.AES.decrypt(encryptedText, encryptionKey);
+  const bytes = CryptoJS.AES.decrypt(encryptedText, key);
   return bytes.toString(CryptoJS.enc.Utf8);
 };
 

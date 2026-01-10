@@ -1,7 +1,5 @@
 const { Invoice, Client, TimeEntry, Payment } = require('../models');
 const PDFDocument = require('pdfkit');
-const fs = require('fs');
-const path = require('path');
 
 const invoiceController = {
   // Get all invoices for current user

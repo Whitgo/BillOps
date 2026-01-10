@@ -87,17 +87,19 @@ syncQueue.process('sync-all-users', async (job) => {
       where: { isActive: true },
     });
 
-    for (const user of users) {
-      // Add individual sync job for each user
-      await syncQueue.add(
+    // Add individual sync jobs for each user concurrently
+    const jobPromises = users.map(user => 
+      syncQueue.add(
         'sync-user-activities',
         { userId: user.id },
         {
           removeOnComplete: true,
           removeOnFail: false,
         }
-      );
-    }
+      )
+    );
+
+    await Promise.all(jobPromises);
 
     return { usersQueued: users.length };
   } catch (error) {
