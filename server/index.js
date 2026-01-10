@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const { sequelize } = require('./models');
 const { schedulePeriodicSync } = require('./services/backgroundJobs');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
@@ -17,6 +18,9 @@ app.use(cors({
 }));
 app.use(morgan('dev'));
 app.use(compression());
+
+// Apply rate limiting to all API routes
+app.use('/api/', apiLimiter);
 
 // Body parsing middleware
 app.use(express.json());
