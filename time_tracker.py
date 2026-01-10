@@ -4,6 +4,11 @@ from dateutil import parser
 import re
 
 
+# Constants for time estimation
+AVERAGE_WORDS_PER_MINUTE = 60
+MIN_EMAIL_DURATION_MINUTES = 6
+
+
 class TimeTracker:
     """Handles passive time tracking from various sources"""
     
@@ -42,7 +47,7 @@ class TimeTracker:
             word_count = len(email_body.split()) if email_body else 0
             # Average reading speed: ~200 words/min, writing: ~40 words/min
             # Assume 50% reading, 50% writing for estimation
-            duration_minutes = max(6, word_count / 60)  # Minimum 6 minutes (0.1 hours)
+            duration_minutes = max(MIN_EMAIL_DURATION_MINUTES, word_count / AVERAGE_WORDS_PER_MINUTE)  # Minimum 6 minutes (0.1 hours)
         
         hours = duration_minutes / 60.0
         

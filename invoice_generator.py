@@ -9,6 +9,10 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER
 
 
+# Constants
+MAX_DESCRIPTION_LENGTH = 60
+
+
 def generate_invoice_pdf(invoice, time_entries):
     """
     Generate a PDF invoice
@@ -120,9 +124,13 @@ def generate_invoice_pdf(invoice, time_entries):
     
     # Add time entries
     for entry in time_entries:
+        description = entry.description
+        if len(description) > MAX_DESCRIPTION_LENGTH:
+            description = description[:MAX_DESCRIPTION_LENGTH] + '...'
+        
         table_data.append([
             entry.date.strftime('%m/%d/%Y'),
-            entry.description[:60] + '...' if len(entry.description) > 60 else entry.description,
+            description,
             f"{entry.hours:.2f}",
             f"${entry.rate:.2f}",
             f"${entry.hours * entry.rate:.2f}"

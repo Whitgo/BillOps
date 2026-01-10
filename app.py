@@ -18,10 +18,8 @@ db.init_app(app)
 time_tracker = TimeTracker()
 payment_processor = PaymentProcessor(app.config['STRIPE_SECRET_KEY'])
 
-
-@app.before_request
-def create_tables():
-    """Create database tables if they don't exist"""
+# Initialize database on startup
+with app.app_context():
     db.create_all()
 
 

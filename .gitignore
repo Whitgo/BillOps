@@ -36,6 +36,9 @@ ENV/
 *.sqlite
 *.sqlite3
 
+# Generated invoices
+invoices/
+
 # Environment variables
 .env
 .env.local
