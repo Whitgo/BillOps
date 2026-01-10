@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BillOps - Automated Billing & Time Capture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            background: #f1f3f5;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5568d3;
+        }
+        
+        button:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .card h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .list-item {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .list-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-invoiced {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .badge-paid {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-draft {
+            background: #f8f9fa;
+            color: #495057;
+        }
+        
+        .badge-sent {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>BillOps</h1>
+            <div class="subtitle">Automated Billing & Time Capture for Law Firms</div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div id="alert" class="hidden"></div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="tab" onclick="switchTab('clients')">Clients</button>
+            <button class="tab" onclick="switchTab('matters')">Matters</button>
+            <button class="tab" onclick="switchTab('time-entries')">Time Entries</button>
+            <button class="tab" onclick="switchTab('time-tracking')">Time Tracking</button>
+            <button class="tab" onclick="switchTab('invoices')">Invoices</button>
+        </div>
+        
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <h2>Dashboard</h2>
+            <div class="grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalClients">0</div>
+                    <div class="stat-label">Total Clients</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeMatters">0</div>
+                    <div class="stat-label">Active Matters</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pendingEntries">0</div>
+                    <div class="stat-label">Pending Time Entries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalInvoiced">$0</div>
+                    <div class="stat-label">Total Invoiced</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Recent Activity</h3>
+                <div id="recentActivity">Loading...</div>
+            </div>
+        </div>
+        
+        <!-- Clients Tab -->
+        <div id="clients" class="tab-content">
+            <h2>Clients</h2>
+            <div class="card">
+                <h3>Add New Client</h3>
+                <form id="clientForm">
+                    <div class="form-group">
+                        <label for="clientName">Client Name *</label>
+                        <input type="text" id="clientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="clientEmail">Email</label>
+                        <input type="email" id="clientEmail">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientPhone">Phone</label>
+                        <input type="tel" id="clientPhone">
+                    </div>
+                    <div class="form-group">
+                        <label for="clientAddress">Address</label>
+                        <textarea id="clientAddress"></textarea>
+                    </div>
+                    <button type="submit">Add Client</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>Client List</h3>
+                <div id="clientList">Loading...</div>
+            </div>
+        </div>
+        
+        <!-- Matters Tab -->
+        <div id="matters" class="tab-content">
+            <h2>Matters</h2>
+            <div class="card">
+                <h3>Add New Matter</h3>
+                <form id="matterForm">
+                    <div class="form-group">
+                        <label for="matterClient">Client *</label>
+                        <select id="matterClient" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="matterName">Matter Name *</label>
+                        <input type="text" id="matterName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="matterDescription">Description</label>
+                        <textarea id="matterDescription"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="matterRate">Hourly Rate ($) *</label>
+                        <input type="number" id="matterRate" step="0.01" value="250.00" required>
+                    </div>
+                    <button type="submit">Add Matter</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>Matter List</h3>
+                <div id="matterList">Loading...</div>
+            </div>
+        </div>
+        
+        <!-- Time Entries Tab -->
+        <div id="time-entries" class="tab-content">
+            <h2>Time Entries</h2>
+            <div class="card">
+                <h3>Add New Time Entry</h3>
+                <form id="timeEntryForm">
+                    <div class="form-group">
+                        <label for="entryMatter">Matter *</label>
+                        <select id="entryMatter" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="entryDescription">Description *</label>
+                        <textarea id="entryDescription" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="entryHours">Hours *</label>
+                        <input type="number" id="entryHours" step="0.1" min="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="entryDate">Date *</label>
+                        <input type="date" id="entryDate" required>
+                    </div>
+                    <button type="submit">Add Time Entry</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>Time Entry List</h3>
+                <div id="timeEntryList">Loading...</div>
+            </div>
+        </div>
+        
+        <!-- Time Tracking Tab -->
+        <div id="time-tracking" class="tab-content">
+            <h2>Passive Time Tracking</h2>
+            
+            <div class="card">
+                <h3>Capture from Email</h3>
+                <form id="emailTrackingForm">
+                    <div class="form-group">
+                        <label for="emailSubject">Email Subject *</label>
+                        <input type="text" id="emailSubject" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailBody">Email Body</label>
+                        <textarea id="emailBody"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailFrom">From</label>
+                        <input type="email" id="emailFrom">
+                    </div>
+                    <div class="form-group">
+                        <label for="emailDuration">Duration (minutes)</label>
+                        <input type="number" id="emailDuration" min="1">
+                    </div>
+                    <button type="submit">Capture Email Time</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>Capture from Calendar Event</h3>
+                <form id="calendarTrackingForm">
+                    <div class="form-group">
+                        <label for="eventTitle">Event Title *</label>
+                        <input type="text" id="eventTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventDescription">Event Description</label>
+                        <textarea id="eventDescription"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventStart">Start Time *</label>
+                        <input type="datetime-local" id="eventStart" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventEnd">End Time *</label>
+                        <input type="datetime-local" id="eventEnd" required>
+                    </div>
+                    <button type="submit">Capture Calendar Time</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>Capture from Document Activity</h3>
+                <form id="documentTrackingForm">
+                    <div class="form-group">
+                        <label for="docName">Document Name *</label>
+                        <input type="text" id="docName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="docType">Document Type</label>
+                        <select id="docType">
+                            <option value="">Select type...</option>
+                            <option value="brief">Brief</option>
+                            <option value="contract">Contract</option>
+                            <option value="memo">Memo</option>
+                            <option value="correspondence">Correspondence</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="docActivity">Activity Type *</label>
+                        <select id="docActivity" required>
+                            <option value="create">Create</option>
+                            <option value="edit">Edit</option>
+                            <option value="review">Review</option>
+                            <option value="comment">Comment</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="docDuration">Duration (minutes)</label>
+                        <input type="number" id="docDuration" min="1">
+                    </div>
+                    <button type="submit">Capture Document Time</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Invoices Tab -->
+        <div id="invoices" class="tab-content">
+            <h2>Invoices</h2>
+            <div class="card">
+                <h3>Create New Invoice</h3>
+                <form id="invoiceForm">
+                    <div class="form-group">
+                        <label for="invoiceClient">Client *</label>
+                        <select id="invoiceClient" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="invoiceMatter">Matter (optional)</label>
+                        <select id="invoiceMatter">
+                            <option value="">All matters for client</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="invoiceDate">Issue Date *</label>
+                        <input type="date" id="invoiceDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="invoiceNotes">Notes</label>
+                        <textarea id="invoiceNotes"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Approved Time Entries:</label>
+                        <div id="approvedEntriesSelect">Loading...</div>
+                    </div>
+                    <button type="submit">Create Invoice</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>Invoice List</h3>
+                <div id="invoiceList">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // API Base URL
+        const API_BASE = '/api';
+        
+        // Current tab
+        let currentTab = 'dashboard';
+        
+        // State
+        let clients = [];
+        let matters = [];
+        let timeEntries = [];
+        let invoices = [];
+        
+        // Utility functions
+        function showAlert(message, type = 'success') {
+            const alert = document.getElementById('alert');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.classList.remove('hidden');
+            setTimeout(() => alert.classList.add('hidden'), 5000);
+        }
+        
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            
+            currentTab = tabName;
+            
+            // Load data for the tab
+            loadTabData(tabName);
+        }
+        
+        async function loadTabData(tabName) {
+            switch(tabName) {
+                case 'dashboard':
+                    await loadDashboard();
+                    break;
+                case 'clients':
+                    await loadClients();
+                    break;
+                case 'matters':
+                    await loadMatters();
+                    await populateClientSelect();
+                    break;
+                case 'time-entries':
+                    await loadTimeEntries();
+                    await populateMatterSelect();
+                    break;
+                case 'invoices':
+                    await loadInvoices();
+                    await populateClientSelect();
+                    await loadApprovedEntries();
+                    break;
+            }
+        }
+        
+        // API calls
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            const response = await fetch(`${API_BASE}${endpoint}`, options);
+            if (!response.ok) {
+                throw new Error(`API call failed: ${response.statusText}`);
+            }
+            
+            if (response.status === 204) {
+                return null;
+            }
+            
+            return await response.json();
+        }
+        
+        // Dashboard
+        async function loadDashboard() {
+            try {
+                clients = await apiCall('/clients');
+                matters = await apiCall('/matters');
+                timeEntries = await apiCall('/time-entries');
+                invoices = await apiCall('/invoices');
+                
+                document.getElementById('totalClients').textContent = clients.length;
+                document.getElementById('activeMatters').textContent = 
+                    matters.filter(m => m.status === 'active').length;
+                document.getElementById('pendingEntries').textContent = 
+                    timeEntries.filter(e => e.status === 'pending').length;
+                
+                const totalInvoiced = invoices
+                    .filter(inv => inv.status !== 'draft')
+                    .reduce((sum, inv) => sum + inv.total_amount, 0);
+                document.getElementById('totalInvoiced').textContent = 
+                    `$${totalInvoiced.toFixed(2)}`;
+                
+                // Show recent activity
+                const recentDiv = document.getElementById('recentActivity');
+                const recentEntries = timeEntries.slice(0, 5);
+                if (recentEntries.length === 0) {
+                    recentDiv.innerHTML = '<p>No recent activity</p>';
+                } else {
+                    recentDiv.innerHTML = recentEntries.map(entry => 
+                        `<div class="list-item">
+                            <div>
+                                <strong>${entry.description}</strong><br>
+                                <small>${entry.client_name} - ${entry.matter_name}</small>
+                            </div>
+                            <div>
+                                ${entry.hours}h - <span class="badge badge-${entry.status}">${entry.status}</span>
+                            </div>
+                        </div>`
+                    ).join('');
+                }
+            } catch (error) {
+                showAlert('Error loading dashboard: ' + error.message, 'error');
+            }
+        }
+        
+        // Clients
+        async function loadClients() {
+            try {
+                clients = await apiCall('/clients');
+                const listDiv = document.getElementById('clientList');
+                
+                if (clients.length === 0) {
+                    listDiv.innerHTML = '<p>No clients yet</p>';
+                } else {
+                    listDiv.innerHTML = clients.map(client => 
+                        `<div class="list-item">
+                            <div>
+                                <strong>${client.name}</strong><br>
+                                <small>${client.email || 'No email'} | ${client.phone || 'No phone'}</small>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn-danger" onclick="deleteClient(${client.id})">Delete</button>
+                            </div>
+                        </div>`
+                    ).join('');
+                }
+            } catch (error) {
+                showAlert('Error loading clients: ' + error.message, 'error');
+            }
+        }
+        
+        document.getElementById('clientForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await apiCall('/clients', 'POST', {
+                    name: document.getElementById('clientName').value,
+                    email: document.getElementById('clientEmail').value,
+                    phone: document.getElementById('clientPhone').value,
+                    address: document.getElementById('clientAddress').value
+                });
+                showAlert('Client added successfully!');
+                e.target.reset();
+                await loadClients();
+            } catch (error) {
+                showAlert('Error adding client: ' + error.message, 'error');
+            }
+        });
+        
+        async function deleteClient(id) {
+            if (confirm('Are you sure you want to delete this client?')) {
+                try {
+                    await apiCall(`/clients/${id}`, 'DELETE');
+                    showAlert('Client deleted successfully!');
+                    await loadClients();
+                } catch (error) {
+                    showAlert('Error deleting client: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // Matters
+        async function loadMatters() {
+            try {
+                matters = await apiCall('/matters');
+                const listDiv = document.getElementById('matterList');
+                
+                if (matters.length === 0) {
+                    listDiv.innerHTML = '<p>No matters yet</p>';
+                } else {
+                    listDiv.innerHTML = matters.map(matter => 
+                        `<div class="list-item">
+                            <div>
+                                <strong>${matter.name}</strong> (${matter.matter_number})<br>
+                                <small>${matter.client_name} | Rate: $${matter.hourly_rate}/hr</small>
+                            </div>
+                            <div class="action-buttons">
+                                <span class="badge badge-${matter.status}">${matter.status}</span>
+                                <button class="btn-danger" onclick="deleteMatter(${matter.id})">Delete</button>
+                            </div>
+                        </div>`
+                    ).join('');
+                }
+            } catch (error) {
+                showAlert('Error loading matters: ' + error.message, 'error');
+            }
+        }
+        
+        async function populateClientSelect() {
+            if (clients.length === 0) {
+                clients = await apiCall('/clients');
+            }
+            
+            const selects = ['matterClient', 'invoiceClient'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.innerHTML = '<option value="">Select a client...</option>' +
+                        clients.map(client => 
+                            `<option value="${client.id}">${client.name}</option>`
+                        ).join('');
+                }
+            });
+        }
+        
+        document.getElementById('matterForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await apiCall('/matters', 'POST', {
+                    client_id: parseInt(document.getElementById('matterClient').value),
+                    name: document.getElementById('matterName').value,
+                    description: document.getElementById('matterDescription').value,
+                    hourly_rate: parseFloat(document.getElementById('matterRate').value)
+                });
+                showAlert('Matter added successfully!');
+                e.target.reset();
+                await loadMatters();
+            } catch (error) {
+                showAlert('Error adding matter: ' + error.message, 'error');
+            }
+        });
+        
+        async function deleteMatter(id) {
+            if (confirm('Are you sure you want to delete this matter?')) {
+                try {
+                    await apiCall(`/matters/${id}`, 'DELETE');
+                    showAlert('Matter deleted successfully!');
+                    await loadMatters();
+                } catch (error) {
+                    showAlert('Error deleting matter: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // Time Entries
+        async function loadTimeEntries() {
+            try {
+                timeEntries = await apiCall('/time-entries');
+                const listDiv = document.getElementById('timeEntryList');
+                
+                if (timeEntries.length === 0) {
+                    listDiv.innerHTML = '<p>No time entries yet</p>';
+                } else {
+                    listDiv.innerHTML = timeEntries.map(entry => 
+                        `<div class="list-item">
+                            <div>
+                                <strong>${entry.description}</strong><br>
+                                <small>${entry.client_name} - ${entry.matter_name} | ${entry.date} | ${entry.hours}h @ $${entry.rate}/hr</small>
+                            </div>
+                            <div class="action-buttons">
+                                <span class="badge badge-${entry.status}">${entry.status}</span>
+                                ${entry.status === 'pending' ? 
+                                    `<button class="btn-success" onclick="approveEntry(${entry.id})">Approve</button>` : ''}
+                                <button class="btn-danger" onclick="deleteEntry(${entry.id})">Delete</button>
+                            </div>
+                        </div>`
+                    ).join('');
+                }
+            } catch (error) {
+                showAlert('Error loading time entries: ' + error.message, 'error');
+            }
+        }
+        
+        async function populateMatterSelect() {
+            if (matters.length === 0) {
+                matters = await apiCall('/matters');
+            }
+            
+            const select = document.getElementById('entryMatter');
+            if (select) {
+                select.innerHTML = '<option value="">Select a matter...</option>' +
+                    matters.map(matter => 
+                        `<option value="${matter.id}">${matter.client_name} - ${matter.name}</option>`
+                    ).join('');
+            }
+        }
+        
+        document.getElementById('timeEntryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await apiCall('/time-entries', 'POST', {
+                    matter_id: parseInt(document.getElementById('entryMatter').value),
+                    description: document.getElementById('entryDescription').value,
+                    hours: parseFloat(document.getElementById('entryHours').value),
+                    date: document.getElementById('entryDate').value
+                });
+                showAlert('Time entry added successfully!');
+                e.target.reset();
+                await loadTimeEntries();
+            } catch (error) {
+                showAlert('Error adding time entry: ' + error.message, 'error');
+            }
+        });
+        
+        async function approveEntry(id) {
+            try {
+                await apiCall(`/time-entries/${id}/approve`, 'POST');
+                showAlert('Time entry approved!');
+                await loadTimeEntries();
+            } catch (error) {
+                showAlert('Error approving entry: ' + error.message, 'error');
+            }
+        }
+        
+        async function deleteEntry(id) {
+            if (confirm('Are you sure you want to delete this time entry?')) {
+                try {
+                    await apiCall(`/time-entries/${id}`, 'DELETE');
+                    showAlert('Time entry deleted successfully!');
+                    await loadTimeEntries();
+                } catch (error) {
+                    showAlert('Error deleting time entry: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // Time Tracking Forms
+        document.getElementById('emailTrackingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const result = await apiCall('/time-tracking/capture-email', 'POST', {
+                    subject: document.getElementById('emailSubject').value,
+                    body: document.getElementById('emailBody').value,
+                    from: document.getElementById('emailFrom').value,
+                    duration_minutes: document.getElementById('emailDuration').value ? 
+                        parseInt(document.getElementById('emailDuration').value) : null
+                });
+                showAlert(`Email time captured: ${result.hours} hours. Please review and assign to a matter in Time Entries.`);
+                e.target.reset();
+            } catch (error) {
+                showAlert('Error capturing email time: ' + error.message, 'error');
+            }
+        });
+        
+        document.getElementById('calendarTrackingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const result = await apiCall('/time-tracking/capture-calendar', 'POST', {
+                    title: document.getElementById('eventTitle').value,
+                    description: document.getElementById('eventDescription').value,
+                    start_time: document.getElementById('eventStart').value,
+                    end_time: document.getElementById('eventEnd').value
+                });
+                showAlert(`Calendar time captured: ${result.hours} hours. Please review and assign to a matter in Time Entries.`);
+                e.target.reset();
+            } catch (error) {
+                showAlert('Error capturing calendar time: ' + error.message, 'error');
+            }
+        });
+        
+        document.getElementById('documentTrackingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const result = await apiCall('/time-tracking/capture-document', 'POST', {
+                    name: document.getElementById('docName').value,
+                    type: document.getElementById('docType').value,
+                    activity_type: document.getElementById('docActivity').value,
+                    duration_minutes: document.getElementById('docDuration').value ? 
+                        parseInt(document.getElementById('docDuration').value) : null
+                });
+                showAlert(`Document time captured: ${result.hours} hours. Please review and assign to a matter in Time Entries.`);
+                e.target.reset();
+            } catch (error) {
+                showAlert('Error capturing document time: ' + error.message, 'error');
+            }
+        });
+        
+        // Invoices
+        async function loadInvoices() {
+            try {
+                invoices = await apiCall('/invoices');
+                const listDiv = document.getElementById('invoiceList');
+                
+                if (invoices.length === 0) {
+                    listDiv.innerHTML = '<p>No invoices yet</p>';
+                } else {
+                    listDiv.innerHTML = invoices.map(invoice => 
+                        `<div class="list-item">
+                            <div>
+                                <strong>${invoice.invoice_number}</strong><br>
+                                <small>${invoice.client_name} | ${invoice.issue_date} | $${invoice.total_amount.toFixed(2)}</small>
+                            </div>
+                            <div class="action-buttons">
+                                <span class="badge badge-${invoice.status}">${invoice.status}</span>
+                                <button onclick="downloadInvoice(${invoice.id})">Download PDF</button>
+                                ${invoice.status === 'draft' ? 
+                                    `<button class="btn-success" onclick="sendInvoice(${invoice.id})">Send</button>` : ''}
+                                <button class="btn-danger" onclick="deleteInvoice(${invoice.id})">Delete</button>
+                            </div>
+                        </div>`
+                    ).join('');
+                }
+            } catch (error) {
+                showAlert('Error loading invoices: ' + error.message, 'error');
+            }
+        }
+        
+        async function loadApprovedEntries() {
+            try {
+                const entries = await apiCall('/time-entries?status=approved');
+                const div = document.getElementById('approvedEntriesSelect');
+                
+                if (entries.length === 0) {
+                    div.innerHTML = '<p>No approved time entries available</p>';
+                } else {
+                    div.innerHTML = entries.map(entry => 
+                        `<div>
+                            <label>
+                                <input type="checkbox" name="timeEntry" value="${entry.id}">
+                                ${entry.date} - ${entry.client_name} - ${entry.matter_name} - ${entry.hours}h @ $${entry.rate}/hr = $${entry.amount.toFixed(2)}
+                            </label>
+                        </div>`
+                    ).join('');
+                }
+            } catch (error) {
+                showAlert('Error loading approved entries: ' + error.message, 'error');
+            }
+        }
+        
+        document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const selectedEntries = Array.from(document.querySelectorAll('input[name="timeEntry"]:checked'))
+                    .map(cb => parseInt(cb.value));
+                
+                if (selectedEntries.length === 0) {
+                    showAlert('Please select at least one time entry', 'error');
+                    return;
+                }
+                
+                await apiCall('/invoices', 'POST', {
+                    client_id: parseInt(document.getElementById('invoiceClient').value),
+                    matter_id: document.getElementById('invoiceMatter').value ? 
+                        parseInt(document.getElementById('invoiceMatter').value) : null,
+                    issue_date: document.getElementById('invoiceDate').value,
+                    notes: document.getElementById('invoiceNotes').value,
+                    time_entry_ids: selectedEntries
+                });
+                showAlert('Invoice created successfully!');
+                e.target.reset();
+                await loadInvoices();
+                await loadApprovedEntries();
+            } catch (error) {
+                showAlert('Error creating invoice: ' + error.message, 'error');
+            }
+        });
+        
+        async function downloadInvoice(id) {
+            window.open(`${API_BASE}/invoices/${id}/pdf`, '_blank');
+        }
+        
+        async function sendInvoice(id) {
+            try {
+                await apiCall(`/invoices/${id}/send`, 'POST');
+                showAlert('Invoice marked as sent!');
+                await loadInvoices();
+            } catch (error) {
+                showAlert('Error sending invoice: ' + error.message, 'error');
+            }
+        }
+        
+        async function deleteInvoice(id) {
+            if (confirm('Are you sure you want to delete this invoice? Time entries will be unlinked.')) {
+                try {
+                    await apiCall(`/invoices/${id}`, 'DELETE');
+                    showAlert('Invoice deleted successfully!');
+                    await loadInvoices();
+                } catch (error) {
+                    showAlert('Error deleting invoice: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set today's date as default for date inputs
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('entryDate').value = today;
+            document.getElementById('invoiceDate').value = today;
+            
+            // Load initial data
+            loadDashboard();
+        });
+    </script>
+</body>
+</html>
