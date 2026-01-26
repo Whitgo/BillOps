@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.routes import auth, clients, projects, time_entries, billing_rules, invoices, payments, users, integrations
+from app.api.v1.routes import auth, clients, projects, time_entries, billing_rules, invoices, payments, users, integrations, notifications
 
 app = FastAPI(
     title="BillOps API",
@@ -33,3 +33,4 @@ app.include_router(billing_rules.router, prefix="/api/v1")
 app.include_router(invoices.router, prefix="/api/v1")
 app.include_router(payments.router, prefix="/api/v1")
 app.include_router(integrations.router, prefix="/api/v1")
+app.include_router(notifications.router)

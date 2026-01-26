@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice {{ invoice.number }}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; color: #1a1a1a; line-height: 1.5; }
+    .container { width: 8.5in; height: 11in; padding: 0; box-sizing: border-box; margin: 0 auto; display: flex; flex-direction: column; background: white; }
+    
+    /* Branded Header with Color Accent */
+    .branded-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75in; position: relative; overflow: hidden; }
+    .branded-header::before { content: ''; position: absolute; top: -50%; right: -10%; width: 300px; height: 300px; background: rgba(255,255,255,0.05); border-radius: 50%; }
+    .branded-header-content { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; }
+    
+    .company-branding { }
+    .company-name { font-size: 24px; font-weight: 700; margin-bottom: 0.1in; letter-spacing: -0.5px; }
+    .tagline { font-size: 11px; opacity: 0.9; }
+    
+    .invoice-badge { background: rgba(255,255,255,0.15); padding: 0.3in 0.4in; border-radius: 6px; text-align: right; }
+    .badge-label { font-size: 10px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px; }
+    .badge-number { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+    /* Main Content */
+    .main-content { padding: 0.75in; flex: 1; display: flex; flex-direction: column; }
+
+    .details-section { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5in; margin-bottom: 0.75in; }
+    .detail-box { padding: 0.25in; }
+    .detail-box h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #667eea; margin-bottom: 0.15in; letter-spacing: 0.5px; }
+    .detail-box p { font-size: 11px; margin: 4px 0; line-height: 1.5; }
+    .detail-box strong { color: #1a1a1a; }
+
+    /* Line Items Table */
+    table { width: 100%; border-collapse: collapse; margin: 0.5in 0; }
+    thead { }
+    th { background: #f5f7fa; border-bottom: 3px solid #667eea; padding: 12px 8px; text-align: left; font-weight: 700; font-size: 11px; color: #1a1a1a; }
+    td { border-bottom: 1px solid #e8eaf0; padding: 12px 8px; font-size: 11px; }
+    tbody tr:last-child td { border-bottom: none; }
+    .amount { text-align: right; font-weight: 500; }
+
+    /* Summary */
+    .summary { display: flex; justify-content: flex-end; margin-top: 0.5in; }
+    .summary-box { background: #f5f7fa; border: 1px solid #e8eaf0; border-radius: 6px; padding: 0.4in 0.5in; width: 250px; }
+    .summary-row { display: flex; justify-content: space-between; margin: 8px 0; font-size: 11px; }
+    .summary-row.total { border-top: 2px solid #667eea; padding-top: 8px; margin-top: 8px; font-weight: 700; font-size: 13px; color: #667eea; }
+
+    /* Notes */
+    .notes-box { background: #f0f4ff; border-left: 4px solid #667eea; padding: 0.3in 0.4in; margin: 0.5in 0; border-radius: 4px; font-size: 10px; color: #1a1a1a; }
+
+    /* Footer */
+    footer { border-top: 1px solid #e8eaf0; padding: 0.3in 0.75in; text-align: center; font-size: 9px; color: #666; background: #fafbfc; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="branded-header">
+      <div class="branded-header-content">
+        <div class="company-branding">
+          <div class="company-name">{{ company.name }}</div>
+          <div class="tagline">Professional Billing Solutions</div>
+        </div>
+        <div class="invoice-badge">
+          <div class="badge-label">Invoice</div>
+          <div class="badge-number">{{ invoice.number }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="details-section">
+        <div class="detail-box">
+          <h3>Bill To</h3>
+          <p><strong>{{ client.name }}</strong></p>
+          {% if client.contact_email %}<p>{{ client.contact_email }}</p>{% endif %}
+        </div>
+        <div class="detail-box">
+          <h3>Invoice Details</h3>
+          <p><strong>Issued:</strong> {{ invoice.issue_date|format_date }}</p>
+          {% if invoice.due_date %}<p><strong>Due Date:</strong> {{ invoice.due_date|format_date }}</p>{% endif %}
+          {% if project and project.name %}<p><strong>Project:</strong> {{ project.name }}</p>{% endif %}
+          <p><strong>Currency:</strong> {{ invoice.currency }}</p>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Service / Description</th>
+            <th class="amount" style="width: 70px;">Qty</th>
+            <th class="amount" style="width: 90px;">Unit Price</th>
+            <th class="amount" style="width: 90px;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.description }}</td>
+            <td class="amount">{{ item.quantity }}</td>
+            <td class="amount">{{ item.unit_price_cents|cents_to_currency(invoice.currency) }}</td>
+            <td class="amount">{{ item.amount_cents|cents_to_currency(invoice.currency) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="summary">
+        <div class="summary-box">
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <span>{{ subtotal_cents|cents_to_currency(invoice.currency) }}</span>
+          </div>
+          {% if tax_cents > 0 %}
+          <div class="summary-row">
+            <span>Tax</span>
+            <span>{{ tax_cents|cents_to_currency(invoice.currency) }}</span>
+          </div>
+          {% endif %}
+          <div class="summary-row total">
+            <span>Total Due</span>
+            <span>{{ total_cents|cents_to_currency(invoice.currency) }}</span>
+          </div>
+        </div>
+      </div>
+
+      {% if invoice.notes %}
+      <div class="notes-box">
+        <strong>Notes</strong><br>
+        {{ invoice.notes }}
+      </div>
+      {% endif %}
+    </div>
+
+    <footer>
+      <div style="margin-bottom: 4px;">
+        {% if company.address %}<span>{{ company.address }}</span> | {% endif %}
+        {% if company.email %}<span>{{ company.email }}</span>{% endif %}
+      </div>
+      <div>Thank you for your business!</div>
+    </footer>
+  </div>
+</body>
+</html>

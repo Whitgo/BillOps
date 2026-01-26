@@ -1,4 +1,17 @@
-"""Celery task for assembling time entries and generating invoice PDFs."""
+"""Celery task for assembling time entries and generating invoice PDFs.
+
+This module provides a Celery task that:
+1. Collects approved time entries for a client/project within a period
+2. Applies active billing rules to compute line items and totals
+3. Renders invoice HTML with configurable template layouts
+4. Generates a PDF document using WeasyPrint
+5. Uploads the PDF to S3 storage
+6. Updates the invoice record with PDF URL and metadata
+7. Marks time entries as billed
+
+Template layouts supported: 'minimalist', 'professional', 'branded'
+Default layout: 'professional'
+"""
 from __future__ import annotations
 
 import logging
@@ -15,7 +28,7 @@ from app.models.time_entry import TimeEntry
 from app.models.client import Client
 from app.models.project import Project
 from app.services.billing_rule import BillingRuleService
-from app.services.invoices.generator import generate_invoice_pdf
+from app.services.invoices.generator import generate_invoice_pdf, TEMPLATE_LAYOUTS
 from app.services.storage.s3 import upload_to_s3
 
 logger = logging.getLogger(__name__)
@@ -31,18 +44,49 @@ def _round_minutes(minutes: int, increment: int | None) -> int:
 def generate_invoice_task(
     self,
     invoice_id: str,
+    template_layout: str = "professional",
+    company_info: dict | None = None,
 ) -> dict:
     """Generate invoice PDF, upload to S3, and update invoice record.
 
-    - Collect approved time entries for invoice's client/project and period (if provided)
-    - Apply active billing rule for project
-    - Create invoice line items and totals
-    - Render HTML and generate PDF
-    - Upload PDF to S3 and update invoice meta
-    - Mark time entries as billed
+    Assembles an invoice by:
+    1. Retrieving the invoice and associated client/project
+    2. Collecting approved time entries within optional period bounds
+    3. Applying the active billing rule for the project
+    4. Creating invoice line items with computed amounts
+    5. Rendering HTML using the specified template layout
+    6. Generating a PDF using WeasyPrint
+    7. Uploading the PDF to S3
+    8. Updating the invoice with PDF URL and marking time entries as billed
+
+    Args:
+        invoice_id: UUID string of the invoice to generate.
+        template_layout: Invoice template layout. One of 'minimalist', 'professional', 
+                        or 'branded'. Defaults to 'professional'.
+        company_info: Optional dictionary with company metadata 
+                     (name, email, address). If not provided, defaults are used.
+
+    Returns:
+        Dictionary with task result including:
+        - status: 'success' or 'error'
+        - invoice_id: Invoice UUID
+        - invoice_number: Invoice number string
+        - line_items: Number of line items created
+        - subtotal_cents: Subtotal amount in cents
+        - total_cents: Total amount including tax in cents
+        - pdf_url: S3 URL of generated PDF (if successful)
+        - message: Error message if status is 'error'
+
+    Raises:
+        Will retry up to 3 times on failure with exponential backoff.
     """
     db: Session = SessionLocal()
     try:
+        # Validate template layout
+        if template_layout not in TEMPLATE_LAYOUTS:
+            logger.warning(f"Unknown template layout '{template_layout}', using 'professional'")
+            template_layout = "professional"
+
         inv_id = UUID(invoice_id)
         invoice: Invoice | None = db.query(Invoice).filter(Invoice.id == inv_id).first()
         if not invoice:
@@ -131,11 +175,19 @@ def generate_invoice_task(
         db.add(invoice)
         db.flush()
 
-        # Generate PDF
+        # Generate PDF with specified layout
         try:
-            pdf_bytes = generate_invoice_pdf(invoice, client, project, line_items)
+            pdf_bytes = generate_invoice_pdf(
+                invoice,
+                client,
+                project,
+                line_items,
+                company_info=company_info,
+                layout=template_layout,
+            )
+            logger.info(f"Generated PDF for invoice {invoice.invoice_number} using '{template_layout}' layout")
         except Exception as e:
-            logger.error(f"Failed to generate PDF: {e}")
+            logger.error(f"Failed to generate PDF for invoice {invoice.invoice_number}: {e}")
             raise
 
         # Upload to S3
@@ -146,7 +198,11 @@ def generate_invoice_task(
         meta = (invoice.meta or {})
         if pdf_url:
             meta["pdf_url"] = pdf_url
+            logger.info(f"PDF uploaded to S3: {pdf_url}")
+        else:
+            logger.warning(f"PDF was not uploaded to S3 (S3 may not be configured)")
         meta["generated_at"] = datetime.now(timezone.utc).isoformat()
+        meta["template_layout"] = template_layout
         invoice.meta = meta
         invoice.status = "sent"
         invoice.updated_at = datetime.now(timezone.utc)
@@ -162,6 +218,7 @@ def generate_invoice_task(
             "subtotal_cents": subtotal_cents,
             "total_cents": invoice.total_cents,
             "pdf_url": pdf_url,
+            "template_layout": template_layout,
         }
 
     except Exception as e:

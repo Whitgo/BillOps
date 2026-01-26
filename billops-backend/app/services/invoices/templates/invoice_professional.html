@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice {{ invoice.number }}</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2c3e50; line-height: 1.6; background: #f5f7fa; }
+    .container { width: 8.5in; height: 11in; padding: 0.5in; box-sizing: border-box; margin: 0 auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+    
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75in; padding-bottom: 0.5in; border-bottom: 3px solid #34495e; }
+    .company-info { }
+    .company-logo { font-size: 20px; font-weight: 700; color: #2980b9; margin-bottom: 0.15in; }
+    .company-details { font-size: 10px; color: #7f8c8d; line-height: 1.4; }
+    
+    .invoice-header { text-align: right; }
+    .invoice-header h1 { font-size: 28px; font-weight: 700; color: #34495e; margin-bottom: 0.1in; }
+    .invoice-number { font-size: 12px; color: #7f8c8d; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5in; margin-bottom: 0.75in; }
+    .info-section { }
+    .info-section h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #34495e; margin-bottom: 0.2in; letter-spacing: 0.5px; border-bottom: 2px solid #ecf0f1; padding-bottom: 0.1in; }
+    .info-section p { font-size: 11px; margin: 4px 0; color: #2c3e50; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5in 0; }
+    thead { background: #ecf0f1; }
+    th { border: 1px solid #bdc3c7; padding: 10px 8px; text-align: left; font-weight: 700; font-size: 11px; color: #34495e; }
+    td { border: 1px solid #ecf0f1; padding: 10px 8px; font-size: 11px; }
+    tbody tr:nth-child(even) { background: #f9fbfc; }
+    .amount { text-align: right; }
+    
+    tfoot { background: #ecf0f1; }
+    tfoot td { border: 1px solid #bdc3c7; padding: 10px 8px; font-weight: 600; }
+    tfoot .total-row td { background: #34495e; color: white; font-weight: 700; }
+
+    .summary-box { background: #f9fbfc; border: 1px solid #bdc3c7; padding: 0.5in; margin: 0.5in 0; border-radius: 4px; }
+    .summary-row { display: flex; justify-content: space-between; margin: 8px 0; font-size: 12px; }
+    .summary-row.total { font-weight: 700; color: #34495e; font-size: 14px; }
+
+    .notes-section { margin-top: 0.5in; padding: 0.25in; background: #f0f3f4; border-left: 4px solid #3498db; font-size: 10px; color: #2c3e50; }
+    
+    footer { margin-top: 0.75in; padding-top: 0.5in; border-top: 1px solid #ecf0f1; text-align: center; font-size: 9px; color: #95a5a6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="company-info">
+        <div class="company-logo">{{ company.name }}</div>
+        <div class="company-details">
+          {% if company.address %}{{ company.address }}<br>{% endif %}
+          {% if company.email %}{{ company.email }}{% endif %}
+        </div>
+      </div>
+      <div class="invoice-header">
+        <h1>INVOICE</h1>
+        <div class="invoice-number">#{{ invoice.number }}</div>
+      </div>
+    </header>
+
+    <div class="info-grid">
+      <div class="info-section">
+        <h3>Bill To</h3>
+        <p><strong>{{ client.name }}</strong></p>
+        {% if client.contact_email %}<p>{{ client.contact_email }}</p>{% endif %}
+      </div>
+      <div class="info-section">
+        <h3>Invoice Information</h3>
+        <p><strong>Issue Date:</strong> {{ invoice.issue_date|format_date }}</p>
+        {% if invoice.due_date %}<p><strong>Due Date:</strong> {{ invoice.due_date|format_date }}</p>{% endif %}
+        {% if project and project.name %}<p><strong>Project:</strong> {{ project.name }}</p>{% endif %}
+        <p><strong>Currency:</strong> {{ invoice.currency }}</p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th class="amount" style="width: 80px;">Quantity</th>
+          <th class="amount" style="width: 100px;">Unit Price</th>
+          <th class="amount" style="width: 100px;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.description }}</td>
+          <td class="amount">{{ item.quantity }}</td>
+          <td class="amount">{{ item.unit_price_cents|cents_to_currency(invoice.currency) }}</td>
+          <td class="amount">{{ item.amount_cents|cents_to_currency(invoice.currency) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" style="text-align: right;">Subtotal</td>
+          <td class="amount">{{ subtotal_cents|cents_to_currency(invoice.currency) }}</td>
+        </tr>
+        {% if tax_cents > 0 %}
+        <tr>
+          <td colspan="3" style="text-align: right;">Tax</td>
+          <td class="amount">{{ tax_cents|cents_to_currency(invoice.currency) }}</td>
+        </tr>
+        {% endif %}
+        <tr class="total-row">
+          <td colspan="3" style="text-align: right;">TOTAL DUE</td>
+          <td class="amount">{{ total_cents|cents_to_currency(invoice.currency) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    {% if invoice.notes %}
+    <div class="notes-section">
+      <strong>Notes & Terms</strong><br>
+      {{ invoice.notes }}
+    </div>
+    {% endif %}
+
+    <footer>
+      Thank you for your business. Please remit payment by the due date. For inquiries, contact {{ company.email }}.
+    </footer>
+  </div>
+</body>
+</html>
