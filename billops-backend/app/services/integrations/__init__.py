@@ -6,12 +6,16 @@ from datetime import datetime, timezone, timedelta
 from typing import Any
 from uuid import UUID
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google.auth.oauthlib.flow import Flow
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth_httplib2 import AuthorizedHttp
-import googleapiclient.discovery
+try:
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google.auth.oauthlib.flow import Flow
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google.auth_httplib2 import AuthorizedHttp
+    import googleapiclient.discovery
+    HAS_GOOGLE = True
+except ImportError:
+    HAS_GOOGLE = False
 
 from app.config.settings import get_settings
 from app.db.session import SessionLocal

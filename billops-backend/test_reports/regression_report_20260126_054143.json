@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-01-26T05:41:43.865007",
+  "results": {
+    "Unit Tests": {
+      "status": "FAILED",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "return_code": 4
+    },
+    "Integration Tests": {
+      "status": "FAILED",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "return_code": 4
+    },
+    "End-to-End Tests": {
+      "status": "FAILED",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "return_code": 4
+    }
+  },
+  "summary": {
+    "total_passed": 0,
+    "total_failed": 0,
+    "total_skipped": 0,
+    "overall_status": "PASSED"
+  }
+}

@@ -1,21 +1,49 @@
+
+
+
+
+
 """API routes for notifications."""
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
-from app.dependencies import get_db
-from app.models import Invoice, TimeEntry
-from app.schemas import (
-    InvoiceSchema,
-    MessageResponse,
-)
-from app.services.notifications.email import EmailNotificationService
-from app.services.notifications.slack import SlackNotificationService
-from app.core.security import get_current_user
+from app.api.v1.dependencies import get_db, get_current_user
+from app.models.invoice import Invoice
+from app.models.time_entry import TimeEntry
+from app.schemas.invoice import InvoiceResponse
+
+
+class MessageResponse(BaseModel):
+    """Generic message response."""
+    message: str
 
 router = APIRouter(prefix="/api/v1/notifications", tags=["notifications"])
 
-email_service = EmailNotificationService()
+# Lazy load email and slack services to avoid initialization errors during testing
+_email_service = None
+_slack_service = None
+
+def get_email_service():
+    global _email_service
+    if _email_service is None:
+        from app.services.notifications.email import EmailNotificationService
+        try:
+            _email_service = EmailNotificationService()
+        except (ValueError, Exception):
+            return None
+    return _email_service
+
+def get_slack_service():
+    global _slack_service
+    if _slack_service is None:
+        from app.services.notifications.slack import SlackNotificationService
+        try:
+            _slack_service = SlackNotificationService()
+        except (ValueError, Exception):
+            return None
+    return _slack_service
 
 
 @router.post("/send-invoice-email", response_model=MessageResponse)

@@ -8,9 +8,28 @@ from app.api.v1.dependencies import get_current_user, get_db
 from app.models.user import User, UserOAuthAccount
 from app.models.integrations import CalendarIntegration, SlackIntegration, SlackUserBinding, SyncedCalendarEvent
 from app.models.time_entry import TimeEntry
-from app.services.integrations.google import GoogleCalendarService
-from app.services.integrations.outlook import OutlookCalendarService
-from app.services.integrations.slack_service import SlackIntegrationService
+
+# Lazy load optional integrations
+def get_google_calendar_service():
+    try:
+        from app.services.integrations.google import GoogleCalendarService
+        return GoogleCalendarService
+    except ImportError:
+        return None
+
+def get_outlook_calendar_service():
+    try:
+        from app.services.integrations.outlook import OutlookCalendarService
+        return OutlookCalendarService
+    except ImportError:
+        return None
+
+def get_slack_integration_service():
+    try:
+        from app.services.integrations.slack_service import SlackIntegrationService
+        return SlackIntegrationService
+    except ImportError:
+        return None
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
