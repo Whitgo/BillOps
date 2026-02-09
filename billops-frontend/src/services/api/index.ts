@@ -32,13 +32,25 @@ export const apiEndpoints = {
     delete: (id: string) => `/invoices/${id}`,
   },
 
-  // Time Capture
-  timeCapture: {
-    list: '/time-capture',
-    get: (id: string) => `/time-capture/${id}`,
-    create: '/time-capture',
-    update: (id: string) => `/time-capture/${id}`,
-    delete: (id: string) => `/time-capture/${id}`,
+  // Billing Rules
+  billingRules: {
+    list: '/api/v1/billing-rules/',
+    get: (id: string) => `/api/v1/billing-rules/${id}`,
+    create: '/api/v1/billing-rules/',
+    update: (id: string) => `/api/v1/billing-rules/${id}`,
+    delete: (id: string) => `/api/v1/billing-rules/${id}`,
+  },
+
+  // Time Entries
+  timeEntries: {
+    list: '/api/v1/time-entries/',
+    get: (id: string) => `/api/v1/time-entries/${id}`,
+    create: '/api/v1/time-entries/',
+    update: (id: string) => `/api/v1/time-entries/${id}`,
+    delete: (id: string) => `/api/v1/time-entries/${id}`,
+    pendingReview: '/api/v1/time-entries/pending-review',
+    ingest: '/api/v1/time-entries/ingest',
+    ingestStatus: (taskId: string) => `/api/v1/time-entries/ingest/${taskId}`,
   },
 
   // Notifications
@@ -53,6 +65,24 @@ export const apiEndpoints = {
   reports: {
     list: '/reports',
     generate: '/reports/generate',
+  },
+
+  // Clients
+  clients: {
+    list: '/api/v1/clients/',
+    get: (id: string) => `/api/v1/clients/${id}`,
+    create: '/api/v1/clients/',
+    update: (id: string) => `/api/v1/clients/${id}`,
+    delete: (id: string) => `/api/v1/clients/${id}`,
+  },
+
+  // Projects
+  projects: {
+    list: '/api/v1/projects/',
+    get: (id: string) => `/api/v1/projects/${id}`,
+    create: '/api/v1/projects/',
+    update: (id: string) => `/api/v1/projects/${id}`,
+    delete: (id: string) => `/api/v1/projects/${id}`,
   },
 };
 

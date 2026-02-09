@@ -11,8 +11,14 @@ import axios, {
 import config from '@/config';
 import { ApiError } from '@/types/api';
 
+interface AuthAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
 class HttpClient {
   private instance: AxiosInstance;
+  private isRefreshing = false;
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor() {
     this.instance = axios.create({
@@ -30,9 +36,9 @@ class HttpClient {
   private setupInterceptors() {
     // Request interceptor
     this.instance.interceptors.request.use(
-      (requestConfig: InternalAxiosRequestConfig) => {
+      (requestConfig: AuthAxiosRequestConfig) => {
         // Add auth token if available
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('accessToken');
         if (token) {
           requestConfig.headers.Authorization = `Bearer ${token}`;
         }
@@ -57,10 +63,67 @@ class HttpClient {
         }
         return response;
       },
-      (error) => {
+      async (error) => {
+        if (axios.isAxiosError(error)) {
+          const originalRequest = error.config as AuthAxiosRequestConfig | undefined;
+          const status = error.response?.status;
+
+          if (status === 401 && originalRequest && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            const newAccessToken = await this.refreshAccessToken();
+            if (newAccessToken) {
+              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+              return this.instance(originalRequest);
+            }
+          }
+        }
+
         return Promise.reject(this.handleError(error));
       }
     );
+  }
+
+  private async refreshAccessToken(): Promise<string | null> {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      this.clearAuthAndRedirect();
+      return null;
+    }
+
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = axios
+      .post<{ tokens: { accessToken: string; refreshToken: string } }>(
+        `${config.apiUrl}/auth/refresh`,
+        { refreshToken }
+      )
+      .then((response) => {
+        const { accessToken, refreshToken: newRefreshToken } = response.data.tokens;
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', newRefreshToken);
+        return accessToken;
+      })
+      .catch(() => {
+        this.clearAuthAndRedirect();
+        return null;
+      })
+      .finally(() => {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      });
+
+    return this.refreshPromise;
+  }
+
+  private clearAuthAndRedirect() {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
   }
 
   private handleError(error: unknown): ApiError {
@@ -74,9 +137,7 @@ class HttpClient {
 
       // Handle specific status codes
       if (status === 401) {
-        // Unauthorized - clear token and redirect to login
-        localStorage.removeItem('authToken');
-        window.location.href = '/login';
+        this.clearAuthAndRedirect();
       }
 
       if (status === 403) {
