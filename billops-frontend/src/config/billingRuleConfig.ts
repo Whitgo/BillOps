@@ -24,6 +24,16 @@ export interface RuleFieldConfig {
   max?: number;
   step?: number;
   help?: string;
+  /**
+   * Condition to show this field. If not specified, always shown.
+   * Examples: "has_revisions", "is_art_commission"
+   */
+  showWhen?: string;
+  /**
+   * The field name that this field depends on for visibility
+   * Used for checkbox fields: dependsOn="field_name" means show if field_name is true
+   */
+  dependsOn?: string;
 }
 
 export interface RuleTypeConfig {
@@ -36,6 +46,11 @@ export interface RuleTypeConfig {
   };
   baseFields: RuleFieldConfig[];
   conditionalFields?: Record<string, RuleFieldConfig[]>;
+  /**
+   * Additional fields that appear conditionally based on form values
+   * Uses field dependencies and showWhen conditions
+   */
+  advancedFields?: RuleFieldConfig[];
   previewTemplate: (data: RulePreviewData) => string;
 }
 
@@ -115,6 +130,56 @@ export const BILLING_RULE_TYPES: Record<RuleType, RuleTypeConfig> = {
         step: 0.5,
       },
     ],
+    advancedFields: [
+      {
+        name: 'has_specialization',
+        label: 'Specialization Rates',
+        type: 'checkbox',
+        description: 'Different rates for specialized work areas',
+        help: 'Shows fields for premium rates on complex tasks',
+      },
+      {
+        name: 'complex_work_rate_multiplier',
+        label: 'Complex Work Multiplier',
+        type: 'number',
+        description: 'Rate multiplier for complex/specialized tasks',
+        placeholder: '1.5',
+        help: '1.5 = 50% premium on complex work',
+        min: 1,
+        step: 0.1,
+        showWhen: 'has_specialization',
+        dependsOn: 'has_specialization',
+      },
+      {
+        name: 'after_hours_multiplier',
+        label: 'After-Hours Multiplier',
+        type: 'number',
+        description: 'Rate multiplier for evenings/weekends',
+        placeholder: '1.25',
+        help: '1.25 = 25% premium for after-hours',
+        min: 1,
+        step: 0.1,
+      },
+      {
+        name: 'emergency_fee_cents',
+        label: 'Emergency Service Fee (cents)',
+        type: 'number',
+        description: 'Flat fee for emergency/rush requests',
+        placeholder: '5000',
+        help: '$50 emergency fee = 5000 cents (in addition to hourly rate)',
+        min: 0,
+      },
+      {
+        name: 'minimum_charge_hours',
+        label: 'Minimum Charge (hours)',
+        type: 'number',
+        description: 'Minimum hours charged even for shorter sessions',
+        placeholder: '1',
+        help: 'Cannot charge less than this amount per billing session',
+        min: 0.25,
+        step: 0.25,
+      },
+    ],
     previewTemplate: (data) => {
       const rate = data.rate_cents ? `$${(data.rate_cents / 100).toFixed(2)}/hr` : '$0/hr';
       const overtime = data.overtime_multiplier ? ` (${data.overtime_multiplier}x OT)` : '';
@@ -150,9 +215,66 @@ export const BILLING_RULE_TYPES: Record<RuleType, RuleTypeConfig> = {
         help: '3-letter ISO currency code',
       },
     ],
+    advancedFields: [
+      {
+        name: 'is_art_commission',
+        label: 'Art Commission Project',
+        type: 'checkbox',
+        description: 'Enable for design and art projects with revision tracking',
+        help: 'Shows additional fields for managing revisions and deliverables',
+      },
+      {
+        name: 'revisions_included',
+        label: 'Revisions Included',
+        type: 'number',
+        description: 'Number of revision rounds included in the base fee',
+        placeholder: '2',
+        help: 'Additional revisions charged at the per-revision rate',
+        min: 0,
+        showWhen: 'is_art_commission',
+        dependsOn: 'is_art_commission',
+      },
+      {
+        name: 'revision_fee_cents',
+        label: 'Per-Revision Fee (cents)',
+        type: 'number',
+        description: 'Cost for each revision beyond included amount',
+        placeholder: '5000',
+        help: '$50 per additional revision = 5000 cents',
+        min: 0,
+        showWhen: 'is_art_commission',
+        dependsOn: 'is_art_commission',
+      },
+      {
+        name: 'deposit_percent',
+        label: 'Deposit Percentage',
+        type: 'number',
+        description: 'Initial deposit required before starting work',
+        placeholder: '20',
+        help: 'Percentage of total fee (e.g., 20 = 20%)',
+        min: 0,
+        max: 100,
+        step: 5,
+        showWhen: 'is_art_commission',
+        dependsOn: 'is_art_commission',
+      },
+      {
+        name: 'payment_schedule',
+        label: 'Payment Schedule',
+        type: 'text',
+        description: 'Describe payment milestones',
+        placeholder: 'Deposit on start, balance on delivery',
+        help: 'e.g., "50% upfront, 50% at delivery" or "Deposit, Mid-project, Final"',
+        showWhen: 'is_art_commission',
+        dependsOn: 'is_art_commission',
+      },
+    ],
     previewTemplate: (data) => {
       const amount = data.rate_cents ? `$${(data.rate_cents / 100).toFixed(2)}` : '$0';
-      return `${amount} flat fee`;
+      const extras = [];
+      if ((data as any).revisions_included) extras.push(`${(data as any).revisions_included} revisions`);
+      if ((data as any).deposit_percent) extras.push(`${(data as any).deposit_percent}% deposit`);
+      return extras.length > 0 ? `${amount} + ${extras.join(', ')}` : `${amount} flat fee`;
     },
   },
 
@@ -200,6 +322,66 @@ export const BILLING_RULE_TYPES: Record<RuleType, RuleTypeConfig> = {
         placeholder: '1.5',
         min: 1,
         step: 0.1,
+      },
+    ],
+    advancedFields: [
+      {
+        name: 'support_tier_based',
+        label: 'Support Tier Pricing',
+        type: 'checkbox',
+        description: 'Offer different service levels/VIP tiers',
+        help: 'Shows fields for response time guarantees and priority support',
+      },
+      {
+        name: 'response_time_hours',
+        label: 'SLA Response Time (hours)',
+        type: 'number',
+        description: 'Guaranteed response time for this tier',
+        placeholder: '4',
+        help: 'Hours until guaranteed first response',
+        min: 1,
+        showWhen: 'support_tier_based',
+        dependsOn: 'support_tier_based',
+      },
+      {
+        name: 'priority_support_fee_cents',
+        label: 'Premium Tier Upgrade (cents)',
+        type: 'number',
+        description: 'Additional monthly fee for priority/VIP support',
+        placeholder: '50000',
+        help: '$500 additional for priority = 50000 cents',
+        min: 0,
+        showWhen: 'support_tier_based',
+        dependsOn: 'support_tier_based',
+      },
+      {
+        name: 'includes_consultation',
+        label: 'Monthly Consultation Call',
+        type: 'checkbox',
+        description: 'Include dedicated strategy session each month',
+        showWhen: 'support_tier_based',
+        dependsOn: 'support_tier_based',
+      },
+      {
+        name: 'minimum_contract_months',
+        label: 'Minimum Contract Length (months)',
+        type: 'number',
+        description: 'Minimum commitment required',
+        placeholder: '3',
+        help: 'Minimum number of months client must commit',
+        min: 1,
+        step: 1,
+      },
+      {
+        name: 'annual_discount_percent',
+        label: 'Annual Prepay Discount (%)',
+        type: 'number',
+        description: 'Discount for annual prepayment',
+        placeholder: '10',
+        help: 'Percentage discount if paying 12 months upfront',
+        min: 0,
+        max: 50,
+        step: 5,
       },
     ],
     previewTemplate: (data) => {
@@ -287,10 +469,84 @@ export const BILLING_RULE_TYPES: Record<RuleType, RuleTypeConfig> = {
         placeholder: 'Banner design',
       },
     ],
+    advancedFields: [
+      {
+        name: 'is_notary_service',
+        label: 'Notary Service',
+        type: 'checkbox',
+        description: 'Enable for notary public services with per-document fees',
+        help: 'Shows fields for notarization stamps, exceptions, and verification',
+      },
+      {
+        name: 'per_stamp_fee_cents',
+        label: 'Per Stamp Fee (cents)',
+        type: 'number',
+        description: 'Additional fee per notary stamp/seal',
+        placeholder: '500',
+        help: '$5 per stamp = 500 cents',
+        min: 0,
+        showWhen: 'is_notary_service',
+        dependsOn: 'is_notary_service',
+      },
+      {
+        name: 'travel_fee_included',
+        label: 'Travel Included',
+        type: 'checkbox',
+        description: 'Travel costs included in the per-item price',
+        help: 'If unchecked, travel will be charged separately',
+        showWhen: 'is_notary_service',
+        dependsOn: 'is_notary_service',
+      },
+      {
+        name: 'remote_notary_fee_cents',
+        label: 'Remote Notary Premium (cents)',
+        type: 'number',
+        description: 'Additional fee for online/remote notarization',
+        placeholder: '1000',
+        help: '$10 premium for remote = 1000 cents',
+        min: 0,
+        showWhen: 'is_notary_service',
+        dependsOn: 'is_notary_service',
+      },
+      {
+        name: 'rush_processing_available',
+        label: 'Rush Processing Available',
+        type: 'checkbox',
+        description: 'Offer expedited notary services',
+        help: 'Allows charged at premium rates for quick turnaround',
+        showWhen: 'is_notary_service',
+        dependsOn: 'is_notary_service',
+      },
+      {
+        name: 'rush_fee_multiplier',
+        label: 'Rush Fee Multiplier',
+        type: 'number',
+        description: 'Multiplier applied to base fee for rush services',
+        placeholder: '1.5',
+        help: '1.5 = 50% premium on rush orders',
+        min: 1,
+        step: 0.1,
+        showWhen: 'is_notary_service',
+        dependsOn: 'is_notary_service',
+      },
+      {
+        name: 'certification_type',
+        label: 'Certification Type',
+        type: 'text',
+        description: 'Type of notary certification offered',
+        placeholder: 'Acknowledged, Jurat, or Affidavit',
+        help: 'e.g., "Acknowledged", "Jurat - Oath/Affirmation", "Copy Certification"',
+        showWhen: 'is_notary_service',
+        dependsOn: 'is_notary_service',
+      },
+    ],
     previewTemplate: (data) => {
       const rate = data.rate_cents ? `$${(data.rate_cents / 100).toFixed(2)}` : '$0';
       const item = data.item_description ? ` per ${data.item_description}` : ' per item';
-      return `${rate}${item}`;
+      const extras = [];
+      if ((data as any).per_stamp_fee_cents) extras.push(`+$${((data as any).per_stamp_fee_cents / 100).toFixed(2)}/stamp`);
+      if ((data as any).remote_notary_fee_cents) extras.push(`+$${((data as any).remote_notary_fee_cents / 100).toFixed(2)} remote`);
+      return extras.length > 0 ? `${rate}${item} (${extras.join(', ')})` : `${rate}${item}`;
     },
   },
 
@@ -495,7 +751,35 @@ export const getFieldsForRuleType = (ruleType: RuleType, conditions?: Record<str
     }
   }
 
+  // Advanced fields are shown based on their own visibility conditions
+  if (config.advancedFields) {
+    fields.push(...config.advancedFields);
+  }
+
   return fields;
+};
+
+/**
+ * Get field visibility based on form data
+ * Checks if a field's conditions are met given the current form values
+ */
+export const isFieldVisible = (field: RuleFieldConfig, formData: Record<string, any>): boolean => {
+  // If no showWhen condition, always show
+  if (!field.showWhen && !field.dependsOn) {
+    return true;
+  }
+
+  // Check dependsOn (typically a checkbox that enables conditional fields)
+  if (field.dependsOn) {
+    return formData[field.dependsOn] === true;
+  }
+
+  // Check showWhen condition
+  if (field.showWhen) {
+    return formData[field.showWhen] === true;
+  }
+
+  return true;
 };
 
 /**

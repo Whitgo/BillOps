@@ -4,13 +4,14 @@
  */
 
 import React, { useMemo } from 'react';
-import { Control, Controller } from 'react-hook-form';
-import { AlertCircle } from 'lucide-react';
+import { Control, Controller, FieldValues, Path, useWatch } from 'react-hook-form';
+import { AlertCircle, ChevronDown } from 'lucide-react';
 import {
   getFieldsForRuleType,
   getRuleTypeConfig,
   RuleFieldConfig,
   RuleType,
+  isFieldVisible,
 } from '@/config/billingRuleConfig';
 import clsx from 'clsx';
 import type { BillingRuleFormData } from '@/schemas/billingRule';
@@ -203,12 +204,13 @@ const RuleFieldInput: React.FC<RuleFieldInputProps> = ({
   }
 };
 
-interface DynamicBillingRuleFormProps {
+interface DynamicBillingRuleFormProps<T extends FieldValues = any> {
   ruleType: RuleType;
-  control: Control<BillingRuleFormData>;
+  control: Control<T>;
   errors?: FieldErrorMap;
   disabled?: boolean;
   showTypeDescription?: boolean;
+  fieldPrefix?: string; // For nesting within compound billing rules, e.g., "blocks.0."
 }
 
 /**
@@ -220,9 +222,13 @@ export const DynamicBillingRuleForm: React.FC<DynamicBillingRuleFormProps> = ({
   errors = {},
   disabled = false,
   showTypeDescription = true,
+  fieldPrefix = '',
 }) => {
   const config = getRuleTypeConfig(ruleType);
   const fields = useMemo(() => getFieldsForRuleType(ruleType), [ruleType]);
+  
+  // Watch all form values to determine field visibility
+  const formValues = useWatch({ control });
 
   if (!config) {
     return (
@@ -233,6 +239,13 @@ export const DynamicBillingRuleForm: React.FC<DynamicBillingRuleFormProps> = ({
     );
   }
 
+  // Separate base, advanced, and conditional fields
+  const baseFields = config.baseFields || [];
+  const advancedFields = config.advancedFields || [];
+  
+  // Base fields that enable visibility of advanced fields
+  const visibilityToggles = advancedFields.filter(f => f.type === 'checkbox' && !f.dependsOn);
+
   return (
     <div className="space-y-4">
       {showTypeDescription && (
@@ -242,29 +255,203 @@ export const DynamicBillingRuleForm: React.FC<DynamicBillingRuleFormProps> = ({
         </div>
       )}
 
+      {/* Base Fields */}
       <div className="grid grid-cols-1 gap-4">
-        {fields.map((field) => (
-          <Controller
-            key={field.name}
-            name={field.name}
-            control={control}
-            render={({ field: { value, onChange, onBlur } }) => (
-              <div className="space-y-1">
-                {field.description && (
-                  <p className="text-xs text-gray-600">{field.description}</p>
-                )}
-                <RuleFieldInput
-                  field={field}
-                  value={value as RuleFieldValue}
-                  onChange={onChange}
-                  onBlur={onBlur}
-                  error={errors[field.name]?.message}
-                  disabled={disabled}
-                />
+        {baseFields.map((field) => {
+          const fieldName = (fieldPrefix + field.name) as Path<any>;
+          return (
+            <Controller
+              key={field.name}
+              name={fieldName}
+              control={control}
+              render={({ field: { value, onChange, onBlur } }) => (
+                <div className="space-y-1">
+                  {field.description && (
+                    <p className="text-xs text-gray-600">{field.description}</p>
+                  )}
+                  <RuleFieldInput
+                    field={field}
+                    value={value as RuleFieldValue}
+                    onChange={onChange}
+                    onBlur={onBlur}
+                    error={errors[field.name]?.message}
+                    disabled={disabled}
+                  />
+                </div>
+              )}
+            />
+          );
+        })}
+      </div>
+
+      {/* Advanced Fields with Visibility Toggles */}
+      {advancedFields.length > 0 && (
+        <AdvancedFieldsSection
+          fields={advancedFields}
+          visibilityToggles={visibilityToggles}
+          control={control}
+          errors={errors}
+          formValues={formValues}
+          disabled={disabled}
+          fieldPrefix={fieldPrefix}
+        />
+      )}
+    </div>
+  );
+};
+
+/**
+ * Advanced Fields Section Component
+ * Manages collapsible advanced fields with conditional visibility
+ */
+interface AdvancedFieldsSectionProps {
+  fields: RuleFieldConfig[];
+  visibilityToggles: RuleFieldConfig[];
+  control: Control<any>;
+  errors: any;
+  formValues: any;
+  disabled: boolean;
+  fieldPrefix: string;
+}
+
+const AdvancedFieldsSection: React.FC<AdvancedFieldsSectionProps> = ({
+  fields,
+  visibilityToggles,
+  control,
+  errors,
+  formValues,
+  disabled,
+  fieldPrefix,
+}) => {
+  const [expandedToggles, setExpandedToggles] = React.useState<Set<string>>(new Set());
+
+  // Find which toggle fields are enabled
+  const enabledToggles = visibilityToggles.filter(t => formValues?.[fieldPrefix + t.name] === true);
+
+  // If at least one toggle is enabled, show that section as expanded
+  React.useEffect(() => {
+    const newExpanded = new Set(expandedToggles);
+    enabledToggles.forEach(t => newExpanded.add(t.name));
+    if (newExpanded.size !== expandedToggles.size) {
+      setExpandedToggles(newExpanded);
+    }
+  }, [enabledToggles.length]);
+
+  return (
+    <div className="space-y-3 border-t pt-4">
+      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Advanced Options</p>
+      
+      {/* Visibility Toggle Buttons */}
+      {visibilityToggles.map(toggle => {
+        const fieldName = (fieldPrefix + toggle.name) as Path<any>;
+        const isExpanded = expandedToggles.has(toggle.name);
+        
+        return (
+          <div key={toggle.name}>
+            <Controller
+              name={fieldName}
+              control={control}
+              render={({ field }) => (
+                <label className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={field.value || false}
+                    onChange={(e) => {
+                      field.onChange(e.target.checked);
+                      if (e.target.checked) {
+                        setExpandedToggles(new Set([...expandedToggles, toggle.name]));
+                      } else {
+                        const newSet = new Set(expandedToggles);
+                        newSet.delete(toggle.name);
+                        setExpandedToggles(newSet);
+                      }
+                    }}
+                    disabled={disabled}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-gray-900">{toggle.label}</p>
+                    {toggle.description && (
+                      <p className="text-xs text-gray-500 mt-0.5">{toggle.description}</p>
+                    )}
+                  </div>
+                  {field.value && (
+                    <ChevronDown className={clsx(
+                      'w-4 h-4 text-blue-600 flex-shrink-0 transition-transform',
+                      isExpanded ? 'rotate-180' : ''
+                    )} />
+                  )}
+                </label>
+              )}
+            />
+
+            {/* Conditional Fields for this Toggle */}
+            {isExpanded && (
+              <div className="mt-2 ml-6 pl-3 border-l-2 border-blue-200 space-y-3">
+                {fields
+                  .filter(f => f.dependsOn === toggle.name && isFieldVisible(f, formValues))
+                  .map(field => {
+                    const fieldName = (fieldPrefix + field.name) as Path<any>;
+                    return (
+                      <Controller
+                        key={field.name}
+                        name={fieldName}
+                        control={control}
+                        render={({ field: { value, onChange, onBlur } }) => (
+                          <div className="space-y-1">
+                            {field.description && (
+                              <p className="text-xs text-gray-600">{field.description}</p>
+                            )}
+                            <RuleFieldInput
+                              field={field}
+                              value={value as RuleFieldValue}
+                              onChange={onChange}
+                              onBlur={onBlur}
+                              error={errors[field.name]?.message}
+                              disabled={disabled}
+                            />
+                          </div>
+                        )}
+                      />
+                    );
+                  })}
               </div>
             )}
-          />
-        ))}
+          </div>
+        );
+      })}
+
+      {/* Non-toggle conditional fields (shown if their dependency is enabled) */}
+      <div className="grid grid-cols-1 gap-4 mt-3">
+        {fields
+          .filter(f => !f.type || f.type !== 'checkbox')
+          .filter(f => !visibilityToggles.find(t => t.name === f.name))
+          .filter(f => isFieldVisible(f, formValues))
+          .map(field => {
+            const fieldName = (fieldPrefix + field.name) as Path<any>;
+            return (
+              <Controller
+                key={field.name}
+                name={fieldName}
+                control={control}
+                render={({ field: { value, onChange, onBlur } }) => (
+                  <div className="space-y-1">
+                    {field.description && (
+                      <p className="text-xs text-gray-600">{field.description}</p>
+                    )}
+                    <RuleFieldInput
+                      field={field}
+                      value={value as RuleFieldValue}
+                      onChange={onChange}
+                      onBlur={onBlur}
+                      error={errors[field.name]?.message}
+                      disabled={disabled}
+                    />
+                  </div>
+                )}
+              />
+            );
+          })}
       </div>
     </div>
   );
